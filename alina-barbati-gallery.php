@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Alina Barbati Gallery
  * Description: Fetch and render the public Barbati gallery from partnervermittlung-alina on any WordPress site.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Christian Eichert 2026
  * Text Domain: alina-barbati-gallery
  * Domain Path: /languages
