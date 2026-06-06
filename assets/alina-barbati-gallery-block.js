@@ -65,6 +65,13 @@
                             onChange: function (value) {
                                 props.setAttributes({ source_endpoint: value || '' });
                             }
+                        }),
+                        el(TextControl, {
+                            label: __('Image target URL override', 'alina-barbati-gallery'),
+                            value: attributes.target_url || '',
+                            onChange: function (value) {
+                                props.setAttributes({ target_url: value || '' });
+                            }
                         })
                     )
                 ),

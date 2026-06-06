@@ -26,6 +26,10 @@
     "source_endpoint": {
       "type": "string",
       "default": ""
+    },
+    "target_url": {
+      "type": "string",
+      "default": ""
     }
   },
   "supports": {

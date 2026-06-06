@@ -18,6 +18,7 @@ const ABG_VERSION = '2026-06-06T18:05:00+02:00';
 const ABG_OPTION_KEY = 'abg_settings';
 const ABG_PAGE_OPTION_KEY = 'abg_page_id';
 const ABG_DEFAULT_ENDPOINT = 'https://partnervermittlung-alina.de/wp-json/pv-partner-matching/v1/public/barbati';
+const ABG_DEFAULT_TARGET_URL = 'https://partnervermittlung-alina.de/wp-login.php?action=nopasslogin';
 const ABG_DEFAULT_CACHE_TTL = 300;
 
 /**
@@ -35,12 +36,13 @@ add_action('init', 'abg_load_textdomain');
  * Return the default plugin settings.
  *
  * @return array<string,int|string>
- * @version 2026-06-06T18:05:00+02:00
+ * @version 2026-06-06T18:40:00+02:00
  */
 function abg_get_default_settings(): array
 {
     return [
         'source_endpoint' => ABG_DEFAULT_ENDPOINT,
+        'target_url' => ABG_DEFAULT_TARGET_URL,
         'page_slug' => 'barbati',
         'menu_label' => 'Barbati',
         'accent_color' => '#926247',
@@ -73,7 +75,7 @@ function abg_get_settings(): array
  *
  * @param mixed $input Raw settings.
  * @return array<string,int|string>
- * @version 2026-06-06T18:05:00+02:00
+ * @version 2026-06-06T18:40:00+02:00
  */
 function abg_sanitize_settings($input): array
 {
@@ -82,6 +84,7 @@ function abg_sanitize_settings($input): array
 
     return [
         'source_endpoint' => esc_url_raw((string) ($input['source_endpoint'] ?? $defaults['source_endpoint'])),
+        'target_url' => esc_url_raw((string) ($input['target_url'] ?? $defaults['target_url'])),
         'page_slug' => sanitize_title((string) ($input['page_slug'] ?? $defaults['page_slug'])),
         'menu_label' => sanitize_text_field((string) ($input['menu_label'] ?? $defaults['menu_label'])),
         'accent_color' => sanitize_hex_color((string) ($input['accent_color'] ?? $defaults['accent_color'])) ?: (string) $defaults['accent_color'],
@@ -110,6 +113,38 @@ function abg_register_settings(): void
     ]);
 }
 add_action('admin_init', 'abg_register_settings');
+
+/**
+ * Return one optional text attribute or the configured fallback.
+ *
+ * @param array<string,mixed> $attributes Render attributes.
+ * @version 2026-06-06T18:40:00+02:00
+ */
+function abg_resolve_text_attribute(array $attributes, string $key, string $fallback): string
+{
+    if (!array_key_exists($key, $attributes) || !is_string($attributes[$key])) {
+        return $fallback;
+    }
+
+    $value = trim($attributes[$key]);
+
+    return $value !== '' ? $value : $fallback;
+}
+
+/**
+ * Return one optional positive integer attribute or the configured fallback.
+ *
+ * @param array<string,mixed> $attributes Render attributes.
+ * @version 2026-06-06T18:40:00+02:00
+ */
+function abg_resolve_int_attribute(array $attributes, string $key, int $fallback, int $min, int $max): int
+{
+    if (!array_key_exists($key, $attributes) || $attributes[$key] === '' || $attributes[$key] === null) {
+        return $fallback;
+    }
+
+    return max($min, min($max, absint($attributes[$key])));
+}
 
 /**
  * Ensure the Barbati landing page exists and stores its ID.
@@ -259,7 +294,7 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'abg_plugin_actio
 /**
  * Render the plugin settings page.
  *
- * @version 2026-06-06T18:05:00+02:00
+ * @version 2026-06-06T18:40:00+02:00
  */
 function abg_render_settings_page(): void
 {
@@ -281,6 +316,15 @@ function abg_render_settings_page(): void
                 <td>
                     <input type="url" class="regular-text" id="abg-source-endpoint" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[source_endpoint]" value="<?php echo esc_attr((string) $settings['source_endpoint']); ?>" form="abg-settings-form">
                     <p class="description"><?php echo esc_html__('Anonymous JSON feed that exposes the approved Barbati photos.', 'alina-barbati-gallery'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="abg-target-url"><?php echo esc_html__('Image target URL', 'alina-barbati-gallery'); ?></label>
+                </th>
+                <td>
+                    <input type="url" class="regular-text" id="abg-target-url" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[target_url]" value="<?php echo esc_attr((string) $settings['target_url']); ?>" form="abg-settings-form">
+                    <p class="description"><?php echo esc_html__('Every gallery image links to this URL.', 'alina-barbati-gallery'); ?></p>
                 </td>
             </tr>
             <tr>
@@ -448,18 +492,17 @@ function abg_fetch_gallery_items(string $endpoint, int $limit): array
  *
  * @param array<string,mixed> $attributes Shortcode or block attributes.
  * @return string
- * @version 2026-06-06T18:05:00+02:00
+ * @version 2026-06-06T18:40:00+02:00
  */
 function abg_render_gallery(array $attributes = []): string
 {
     $settings = abg_get_settings();
-    $endpoint = isset($attributes['source_endpoint']) && is_string($attributes['source_endpoint']) && $attributes['source_endpoint'] !== ''
-        ? esc_url_raw($attributes['source_endpoint'])
-        : (string) $settings['source_endpoint'];
+    $endpoint = esc_url_raw(abg_resolve_text_attribute($attributes, 'source_endpoint', (string) $settings['source_endpoint']));
+    $target_url = esc_url(abg_resolve_text_attribute($attributes, 'target_url', (string) $settings['target_url']));
     $limit = isset($attributes['limit']) ? max(0, absint($attributes['limit'])) : 0;
-    $columns_desktop = isset($attributes['columns_desktop']) ? max(1, min(6, absint($attributes['columns_desktop']))) : (int) $settings['columns_desktop'];
-    $columns_tablet = isset($attributes['columns_tablet']) ? max(1, min(4, absint($attributes['columns_tablet']))) : (int) $settings['columns_tablet'];
-    $columns_mobile = isset($attributes['columns_mobile']) ? max(1, min(3, absint($attributes['columns_mobile']))) : (int) $settings['columns_mobile'];
+    $columns_desktop = abg_resolve_int_attribute($attributes, 'columns_desktop', (int) $settings['columns_desktop'], 1, 6);
+    $columns_tablet = abg_resolve_int_attribute($attributes, 'columns_tablet', (int) $settings['columns_tablet'], 1, 4);
+    $columns_mobile = abg_resolve_int_attribute($attributes, 'columns_mobile', (int) $settings['columns_mobile'], 1, 3);
     $items = $endpoint !== '' ? abg_fetch_gallery_items($endpoint, $limit) : [];
 
     wp_enqueue_style('abg-gallery');
@@ -490,7 +533,7 @@ function abg_render_gallery(array $attributes = []): string
             <div class="abg-gallery-grid" id="abg-gallery-grid" data-id="abg-gallery-grid">
                 <?php foreach ($items as $index => $item) : ?>
                     <article class="abg-gallery-card" id="abg-gallery-card-<?php echo esc_attr((string) $index); ?>" data-id="abg-gallery-card">
-                        <a class="abg-gallery-link" href="<?php echo esc_url((string) ($item['fullUrl'] ?? $item['photoUrl'] ?? '')); ?>" target="_blank" rel="noopener">
+                        <a class="abg-gallery-link" href="<?php echo $target_url; ?>">
                             <img
                                 class="abg-gallery-image"
                                 src="<?php echo esc_url((string) ($item['photoUrl'] ?? '')); ?>"
@@ -515,7 +558,7 @@ function abg_render_gallery(array $attributes = []): string
  *
  * @param array<string,mixed> $atts Shortcode attributes.
  * @return string
- * @version 2026-06-06T18:05:00+02:00
+ * @version 2026-06-06T18:40:00+02:00
  */
 function abg_render_gallery_shortcode(array $atts = []): string
 {
@@ -525,6 +568,7 @@ function abg_render_gallery_shortcode(array $atts = []): string
         'columns_tablet' => '',
         'columns_mobile' => '',
         'source_endpoint' => '',
+        'target_url' => '',
     ], $atts, 'alina_barbati_gallery');
 
     return abg_render_gallery($attributes);
