@@ -33,21 +33,30 @@
                             }
                         }),
                         el(RangeControl, {
-                            label: __('Desktop columns', 'alina-barbati-gallery'),
-                            min: 1,
-                            max: 6,
-                            value: attributes.columns_desktop || 4,
-                            onChange: function (value) {
-                                props.setAttributes({ columns_desktop: value || 4 });
-                            }
-                        }),
-                        el(RangeControl, {
                             label: __('Mobile columns', 'alina-barbati-gallery'),
                             min: 1,
                             max: 3,
                             value: attributes.columns_mobile || 2,
                             onChange: function (value) {
                                 props.setAttributes({ columns_mobile: value || 2 });
+                            }
+                        }),
+                        el(RangeControl, {
+                            label: __('Tablet columns', 'alina-barbati-gallery'),
+                            min: 1,
+                            max: 4,
+                            value: attributes.columns_tablet || 2,
+                            onChange: function (value) {
+                                props.setAttributes({ columns_tablet: value || 2 });
+                            }
+                        }),
+                        el(RangeControl, {
+                            label: __('Desktop columns', 'alina-barbati-gallery'),
+                            min: 1,
+                            max: 6,
+                            value: attributes.columns_desktop || 4,
+                            onChange: function (value) {
+                                props.setAttributes({ columns_desktop: value || 4 });
                             }
                         }),
                         el(TextControl, {

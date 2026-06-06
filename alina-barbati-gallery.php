@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const ABG_VERSION = '2026-06-06T16:35:00+02:00';
+const ABG_VERSION = '2026-06-06T18:05:00+02:00';
 const ABG_OPTION_KEY = 'abg_settings';
 const ABG_PAGE_OPTION_KEY = 'abg_page_id';
 const ABG_DEFAULT_ENDPOINT = 'https://partnervermittlung-alina.de/wp-json/pv-partner-matching/v1/public/barbati';
@@ -35,7 +35,7 @@ add_action('init', 'abg_load_textdomain');
  * Return the default plugin settings.
  *
  * @return array<string,int|string>
- * @version 2026-06-06T16:35:00+02:00
+ * @version 2026-06-06T18:05:00+02:00
  */
 function abg_get_default_settings(): array
 {
@@ -47,6 +47,7 @@ function abg_get_default_settings(): array
         'card_radius' => 24,
         'card_gap' => 18,
         'columns_desktop' => 4,
+        'columns_tablet' => 2,
         'columns_mobile' => 2,
         'cache_ttl' => ABG_DEFAULT_CACHE_TTL,
         'inject_menu' => 1,
@@ -72,7 +73,7 @@ function abg_get_settings(): array
  *
  * @param mixed $input Raw settings.
  * @return array<string,int|string>
- * @version 2026-06-06T16:35:00+02:00
+ * @version 2026-06-06T18:05:00+02:00
  */
 function abg_sanitize_settings($input): array
 {
@@ -87,6 +88,7 @@ function abg_sanitize_settings($input): array
         'card_radius' => max(0, min(60, absint($input['card_radius'] ?? $defaults['card_radius']))),
         'card_gap' => max(0, min(48, absint($input['card_gap'] ?? $defaults['card_gap']))),
         'columns_desktop' => max(1, min(6, absint($input['columns_desktop'] ?? $defaults['columns_desktop']))),
+        'columns_tablet' => max(1, min(4, absint($input['columns_tablet'] ?? $defaults['columns_tablet']))),
         'columns_mobile' => max(1, min(3, absint($input['columns_mobile'] ?? $defaults['columns_mobile']))),
         'cache_ttl' => max(60, min(DAY_IN_SECONDS, absint($input['cache_ttl'] ?? $defaults['cache_ttl']))),
         'inject_menu' => empty($input['inject_menu']) ? 0 : 1,
@@ -257,7 +259,7 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'abg_plugin_actio
 /**
  * Render the plugin settings page.
  *
- * @version 2026-06-06T16:35:00+02:00
+ * @version 2026-06-06T18:05:00+02:00
  */
 function abg_render_settings_page(): void
 {
@@ -323,18 +325,26 @@ function abg_render_settings_page(): void
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="abg-columns-desktop"><?php echo esc_html__('Desktop columns', 'alina-barbati-gallery'); ?></label>
-                </th>
-                <td>
-                    <input type="number" id="abg-columns-desktop" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[columns_desktop]" min="1" max="6" value="<?php echo esc_attr((string) $settings['columns_desktop']); ?>" form="abg-settings-form">
-                </td>
-            </tr>
-            <tr>
-                <th scope="row">
                     <label for="abg-columns-mobile"><?php echo esc_html__('Mobile columns', 'alina-barbati-gallery'); ?></label>
                 </th>
                 <td>
                     <input type="number" id="abg-columns-mobile" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[columns_mobile]" min="1" max="3" value="<?php echo esc_attr((string) $settings['columns_mobile']); ?>" form="abg-settings-form">
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="abg-columns-tablet"><?php echo esc_html__('Tablet columns', 'alina-barbati-gallery'); ?></label>
+                </th>
+                <td>
+                    <input type="number" id="abg-columns-tablet" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[columns_tablet]" min="1" max="4" value="<?php echo esc_attr((string) $settings['columns_tablet']); ?>" form="abg-settings-form">
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="abg-columns-desktop"><?php echo esc_html__('Desktop columns', 'alina-barbati-gallery'); ?></label>
+                </th>
+                <td>
+                    <input type="number" id="abg-columns-desktop" name="<?php echo esc_attr(ABG_OPTION_KEY); ?>[columns_desktop]" min="1" max="6" value="<?php echo esc_attr((string) $settings['columns_desktop']); ?>" form="abg-settings-form">
                 </td>
             </tr>
             <tr>
@@ -438,7 +448,7 @@ function abg_fetch_gallery_items(string $endpoint, int $limit): array
  *
  * @param array<string,mixed> $attributes Shortcode or block attributes.
  * @return string
- * @version 2026-06-06T16:35:00+02:00
+ * @version 2026-06-06T18:05:00+02:00
  */
 function abg_render_gallery(array $attributes = []): string
 {
@@ -448,6 +458,7 @@ function abg_render_gallery(array $attributes = []): string
         : (string) $settings['source_endpoint'];
     $limit = isset($attributes['limit']) ? max(0, absint($attributes['limit'])) : 0;
     $columns_desktop = isset($attributes['columns_desktop']) ? max(1, min(6, absint($attributes['columns_desktop']))) : (int) $settings['columns_desktop'];
+    $columns_tablet = isset($attributes['columns_tablet']) ? max(1, min(4, absint($attributes['columns_tablet']))) : (int) $settings['columns_tablet'];
     $columns_mobile = isset($attributes['columns_mobile']) ? max(1, min(3, absint($attributes['columns_mobile']))) : (int) $settings['columns_mobile'];
     $items = $endpoint !== '' ? abg_fetch_gallery_items($endpoint, $limit) : [];
 
@@ -459,11 +470,12 @@ function abg_render_gallery(array $attributes = []): string
     }
 
     $wrapper_style = sprintf(
-        '--abg-accent:%1$s;--abg-gap:%2$spx;--abg-radius:%3$spx;--abg-columns-desktop:%4$s;--abg-columns-mobile:%5$s;',
+        '--abg-accent:%1$s;--abg-gap:%2$spx;--abg-radius:%3$spx;--abg-columns-desktop:%4$s;--abg-columns-tablet:%5$s;--abg-columns-mobile:%6$s;',
         esc_attr((string) $settings['accent_color']),
         esc_attr((string) $settings['card_gap']),
         esc_attr((string) $settings['card_radius']),
         esc_attr((string) $columns_desktop),
+        esc_attr((string) $columns_tablet),
         esc_attr((string) $columns_mobile)
     );
 
@@ -503,13 +515,14 @@ function abg_render_gallery(array $attributes = []): string
  *
  * @param array<string,mixed> $atts Shortcode attributes.
  * @return string
- * @version 2026-06-06T16:35:00+02:00
+ * @version 2026-06-06T18:05:00+02:00
  */
 function abg_render_gallery_shortcode(array $atts = []): string
 {
     $attributes = shortcode_atts([
         'limit' => 0,
         'columns_desktop' => '',
+        'columns_tablet' => '',
         'columns_mobile' => '',
         'source_endpoint' => '',
     ], $atts, 'alina_barbati_gallery');
