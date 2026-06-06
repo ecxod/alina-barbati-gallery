@@ -1,0 +1,30 @@
+{
+  "apiVersion": 3,
+  "name": "alina-barbati-gallery/gallery",
+  "title": "Barbati Gallery",
+  "category": "widgets",
+  "icon": "format-gallery",
+  "description": "Render the public Barbati gallery from partnervermittlung-alina.",
+  "textdomain": "alina-barbati-gallery",
+  "attributes": {
+    "limit": {
+      "type": "number",
+      "default": 0
+    },
+    "columns_desktop": {
+      "type": "number",
+      "default": 4
+    },
+    "columns_mobile": {
+      "type": "number",
+      "default": 2
+    },
+    "source_endpoint": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}

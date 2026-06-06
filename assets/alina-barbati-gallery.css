@@ -1,0 +1,67 @@
+.abg-gallery-shell {
+    --abg-accent: #926247;
+    --abg-gap: 18px;
+    --abg-radius: 24px;
+    --abg-columns-desktop: 4;
+    --abg-columns-mobile: 2;
+    padding: clamp(18px, 2.5vw, 30px);
+    border-radius: calc(var(--abg-radius) + 8px);
+    background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--abg-accent) 22%, transparent) 0%, transparent 36%),
+        linear-gradient(180deg, #fffaf4 0%, #f4eee7 100%);
+    box-shadow: 0 22px 60px -42px rgba(33, 22, 14, 0.45);
+}
+
+.abg-gallery-grid {
+    display: grid;
+    gap: var(--abg-gap);
+    grid-template-columns: repeat(var(--abg-columns-mobile), minmax(0, 1fr));
+}
+
+.abg-gallery-card {
+    overflow: hidden;
+    border-radius: var(--abg-radius);
+    background: #fff;
+    box-shadow: 0 22px 45px -34px rgba(27, 17, 10, 0.42);
+    transform: translateY(0);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.abg-gallery-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 26px 55px -30px rgba(27, 17, 10, 0.5);
+}
+
+.abg-gallery-link {
+    display: block;
+    aspect-ratio: 3 / 4;
+}
+
+.abg-gallery-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.abg-gallery-empty {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed color-mix(in srgb, var(--abg-accent) 35%, #b3a291);
+    border-radius: var(--abg-radius);
+    background: rgba(255, 255, 255, 0.75);
+    color: #5b4637;
+    text-align: center;
+    padding: 24px;
+}
+
+.abg-menu-item a {
+    white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+    .abg-gallery-grid {
+        grid-template-columns: repeat(var(--abg-columns-desktop), minmax(0, 1fr));
+    }
+}
